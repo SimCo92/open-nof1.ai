@@ -42,7 +42,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<string>("");
 
-  // 获取图表数据
+  // Fetch metrics data
   const fetchMetrics = useCallback(async () => {
     try {
       const response = await fetch("/api/metrics");
@@ -61,7 +61,7 @@ export default function Home() {
     }
   }, []);
 
-  // 获取价格数据
+  // Fetch pricing data
   const fetchPricing = useCallback(async () => {
     try {
       const response = await fetch("/api/pricing");
@@ -77,7 +77,7 @@ export default function Home() {
   }, []);
 
   useEffect(() => {
-    // 初始加载
+    // Initial load
     fetchMetrics();
     fetchPricing();
 

@@ -101,25 +101,50 @@ This open-source implementation currently focuses on running the **DeepSeek** tr
    bun dev
    ```
 
+Optional: Run with Docker
+
+If you prefer to run the stack with Docker and Docker Compose, the repository includes a configuration that starts the app, PostgreSQL, and the cron worker.
+
+```bash
+# Build and start services in the background
+docker compose up --build -d
+
+# Apply Prisma migrations (run once, or whenever the schema changes)
+docker compose exec app bunx prisma db push
+
+# Follow application logs
+docker compose logs -f app
+```
+
+To run only the scheduled jobs container (for example on a separate host), use:
+
+```bash
+docker compose up -d cron
+```
+
 6. **Set up cron jobs** (for automated trading)
 
    You'll need to set up external cron jobs or use a service like [Vercel Cron](https://vercel.com/docs/cron-jobs) to call these endpoints:
 
-   - `POST /api/cron/20-seconds-metrics-interval` - Collect metrics every 20 seconds
-   - `POST /api/cron/3-minutes-run-interval` - Execute trading logic every 3 minutes
+   - `GET /api/cron/20-seconds-metrics-interval` - Collect metrics every 20 seconds
+   - `GET /api/cron/3-minutes-run-interval` - Execute trading logic every 3 minutes
+
+   Use the bundled helper `scripts/generate-jwt.js` to mint short-lived JWTs for these requests. (You can run it with either `node scripts/generate-jwt.js` or `bun scripts/generate-jwt.js`.)
 
    Example crontab:
    ```bash
    # Metrics collection (every 20 seconds)
-   * * * * * curl -X POST http://localhost:3000/api/cron/20-seconds-metrics-interval -H "Authorization: Bearer YOUR_CRON_SECRET_KEY"
-   * * * * * sleep 20 && curl -X POST http://localhost:3000/api/cron/20-seconds-metrics-interval -H "Authorization: Bearer YOUR_CRON_SECRET_KEY"
-   * * * * * sleep 40 && curl -X POST http://localhost:3000/api/cron/20-seconds-metrics-interval -H "Authorization: Bearer YOUR_CRON_SECRET_KEY"
+   * * * * * sh -c 'TOKEN=$(node /path/to/open-nof1.ai/scripts/generate-jwt.js) && curl -G -s -o /dev/null "http://localhost:3000/api/cron/20-seconds-metrics-interval" --data-urlencode "token=$TOKEN"'
+   * * * * * sh -c 'sleep 20 && TOKEN=$(node /path/to/open-nof1.ai/scripts/generate-jwt.js) && curl -G -s -o /dev/null "http://localhost:3000/api/cron/20-seconds-metrics-interval" --data-urlencode "token=$TOKEN"'
+   * * * * * sh -c 'sleep 40 && TOKEN=$(node /path/to/open-nof1.ai/scripts/generate-jwt.js) && curl -G -s -o /dev/null "http://localhost:3000/api/cron/20-seconds-metrics-interval" --data-urlencode "token=$TOKEN"'
 
    # Trading execution (every 3 minutes)
-   */3 * * * * curl -X POST http://localhost:3000/api/cron/3-minutes-run-interval -H "Authorization: Bearer YOUR_CRON_SECRET_KEY"
+   */3 * * * * sh -c 'TOKEN=$(node /path/to/open-nof1.ai/scripts/generate-jwt.js) && curl -G -s -o /dev/null "http://localhost:3000/api/cron/3-minutes-run-interval" --data-urlencode "token=$TOKEN"'
    ```
 
-Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
+   A ready-to-use variant for Docker deployments lives in `crontab`.
+
+   Open [http://localhost:3000](http://localhost:3000) to view the dashboard.
 
 ## 📁 Project Structure
 

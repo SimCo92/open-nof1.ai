@@ -63,7 +63,7 @@ export function ModelsView() {
     return () => clearInterval(interval);
   }, [fetchChats]);
 
-  // 只获取 Buy 和 Sell 操作的交易
+  // Only include trades with Buy or Sell operations
   const completedTrades = chats.flatMap((chat) =>
     chat.tradings
       .filter((t) => t.opeartion === "Buy" || t.opeartion === "Sell")

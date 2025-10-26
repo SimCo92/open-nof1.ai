@@ -26,14 +26,14 @@ interface MetricsChartProps {
 const chartConfig = {
   totalCashValue: {
     label: "Cash Value",
-    color: "#0066FF", // Deepseek 蓝色
+    color: "#0066FF", // Deepseek blue
   },
 } satisfies ChartConfig;
 
-// Deepseek 品牌色
+// Deepseek brand color
 const DEEPSEEK_BLUE = "#0066FF";
 
-// 自定义最后一个点的渲染（带动画）
+// Custom rendering for the last point (with animation)
 interface CustomDotProps {
   cx?: number;
   cy?: number;
@@ -45,7 +45,7 @@ interface CustomDotProps {
 const CustomDot = (props: CustomDotProps) => {
   const { cx, cy, index, payload, dataLength } = props;
 
-  // 只在最后一个点显示 logo 和价格
+  // Only display the logo and price on the final point
   if (!payload || !cx || !cy || index !== dataLength - 1) {
     return null;
   }
@@ -56,11 +56,11 @@ const CustomDot = (props: CustomDotProps) => {
     maximumFractionDigits: 2,
   })}`;
 
-  // CustomDot 必须返回 SVG 元素，因为它是在 recharts 的 SVG 上下文中渲染的
-  // 可以使用 <g> 包裹多个 SVG 元素，或使用 <foreignObject> 嵌入 HTML
+  // CustomDot must return SVG elements because it renders inside Recharts' SVG context
+  // Use <g> to wrap multiple SVG nodes or <foreignObject> to embed HTML
   return (
     <g>
-      {/* 动画圆圈 - 纯 SVG */}
+      {/* Animated ring - pure SVG */}
       <circle
         cx={cx}
         cy={cy}
@@ -69,7 +69,7 @@ const CustomDot = (props: CustomDotProps) => {
         opacity={0.2}
         className="animate-ping"
       />
-      {/* 主圆点 - 纯 SVG */}
+      {/* Core dot - pure SVG */}
       <circle
         cx={cx}
         cy={cy}
@@ -79,14 +79,14 @@ const CustomDot = (props: CustomDotProps) => {
         strokeWidth={2}
       />
 
-      {/* Logo 和价格容器 - 使用 foreignObject 嵌入 HTML/React 组件 */}
+      {/* Logo and price container - embed HTML/React via foreignObject */}
       <foreignObject x={cx + 15} y={cy - 30} width={180} height={60}>
         <div className="flex items-center gap-2 bg-background border border-border rounded-lg px-3 py-2 shadow-lg">
           {/* Deepseek Logo */}
           <div className="relative w-10 h-10 rounded-full bg-[#0066FF] flex items-center justify-center flex-shrink-0">
             <ArcticonsDeepseek className="w-6 h-6 text-black" />
           </div>
-          {/* 价格 */}
+          {/* Price */}
           <div className="flex flex-col">
             <div className="text-[10px] text-muted-foreground font-medium">
               Deepseek

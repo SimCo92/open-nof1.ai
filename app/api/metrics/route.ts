@@ -3,14 +3,14 @@ import { ModelType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { MetricData } from "@/lib/types/metrics";
 
-// 最大返回数据点数量
+// Maximum number of data points to return
 const MAX_DATA_POINTS = 50;
 
 /**
- * 从数组中均匀采样指定数量的元素
- * @param data - 原始数据数组
- * @param sampleSize - 需要采样的数量
- * @returns 均匀分布的采样数据
+ * Evenly sample a fixed number of items from an array.
+ * @param data - Source dataset
+ * @param sampleSize - Number of elements to sample
+ * @returns Evenly spaced sampled data
  */
 function uniformSample<T>(data: T[], sampleSize: number): T[] {
   if (data.length <= sampleSize) {
@@ -60,7 +60,7 @@ export const GET = async () => {
       })
       .filter((item) => (item as unknown as MetricData).availableCash > 0);
 
-    // 均匀采样数据，最多返回 MAX_DATA_POINTS 条
+    // Evenly sample the data, limiting to MAX_DATA_POINTS entries
     const sampledMetrics = uniformSample(metricsData, MAX_DATA_POINTS);
 
     console.log(

@@ -3,7 +3,7 @@ import { getCurrentMarketState } from "@/lib/trading/current-market-state";
 
 export const GET = async () => {
   try {
-    // 并行获取所有加密货币价格
+    // Fetch all cryptocurrency prices in parallel
     const [btcPricing, ethPricing, solPricing, dogePricing, bnbPricing] =
       await Promise.all([
         getCurrentMarketState("BTC/USDT"),
