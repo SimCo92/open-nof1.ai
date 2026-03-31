@@ -74,3 +74,125 @@ enum ModelType {
   Qwen
   Doubao
 }
+
+// ─── Trading Bot Models ───────────────────────────────────
+
+model BotInstance {
+  id     String    @id @default(uuid())
+  botId  String    @unique
+  status BotStatus @default(Idle)
+  config Json
+
+  startedAt          DateTime?
+  stoppedAt          DateTime?
+  lastTickAt         DateTime?
+  lastError          String?
+  tickCount          Int       @default(0)
+
+  consecutiveLosses  Int       @default(0)
+  dailyPnl           Float     @default(0)
+  dailyPnlResetAt    DateTime  @default(now())
+  circuitBrokenUntil DateTime?
+
+  orders         BotOrder[]
+  strategyStates StrategyState[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum BotStatus {
+  Idle
+  Running
+  Paused
+  Stopped
+  Error
+}
+
+model StrategyState {
+  id            String  @id @default(uuid())
+  strategyId    String
+  type          String
+  symbol        String
+  enabled       Boolean @default(true)
+  parameters    Json
+  internalState Json?
+
+  botInstance   BotInstance @relation(fields: [botInstanceId], references: [id], onDelete: Cascade)
+  botInstanceId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([botInstanceId, strategyId])
+}
+
+model BotOrder {
+  id              String      @id @default(uuid())
+  exchangeOrderId String?
+  symbol          String
+  side            String
+  type            String
+  status          BotOrderStatus @default(Pending)
+  tag             String
+
+  requestedQuantity Float
+  requestedPrice    Float?
+  stopPrice         Float?
+  trailingDelta     Float?
+  reduceOnly        Boolean @default(false)
+
+  filledQuantity Float   @default(0)
+  averagePrice   Float?
+  fees           Float?
+
+  strategyId    String
+  parentOrderId String?
+  parentOrder   BotOrder?  @relation("OrderChildren", fields: [parentOrderId], references: [id])
+  childOrders   BotOrder[] @relation("OrderChildren")
+
+  error String?
+
+  botInstance   BotInstance @relation(fields: [botInstanceId], references: [id], onDelete: Cascade)
+  botInstanceId String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([botInstanceId, status])
+  @@index([exchangeOrderId])
+  @@index([symbol, status])
+}
+
+enum BotOrderStatus {
+  Pending
+  Placed
+  PartiallyFilled
+  Filled
+  Cancelled
+  Failed
+  Expired
+}
+
+model TradeResult {
+  id         String @id @default(uuid())
+  symbol     String
+  side       String
+  entryPrice Float
+  exitPrice  Float
+  quantity   Float
+  pnl        Float
+  pnlPct     Float
+  fees       Float
+  strategyId String
+
+  entryOrderId String
+  exitOrderId  String
+
+  botInstanceId String
+
+  closedAt DateTime @default(now())
+
+  @@index([botInstanceId, closedAt])
+  @@index([strategyId])
+}
