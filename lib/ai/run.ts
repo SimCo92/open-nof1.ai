@@ -5,19 +5,20 @@ import { z } from "zod";
 import { deepseekR1 } from "./model";
 import { getAccountInformationAndPerformance } from "../trading/account-information-and-performance";
 import { prisma } from "../prisma";
-import { Opeartion, Symbol } from "@prisma/client";
+import { Opeartion } from "@prisma/client";
 import { buy } from "../trading/buy";
 import { sell } from "../trading/sell";
+import { recordDecision } from "./record-decision";
+import { TRADING_SYMBOL, getPrismaSymbol } from "../config/trading";
 
-/**
- * you can interval trading using cron job
- */
 export async function run(initialCapital: number) {
   try {
-    const currentMarketState = await getCurrentMarketState("BTC/USDT");
-    const accountInformationAndPerformance =
-      await getAccountInformationAndPerformance(initialCapital);
-    const invocationCount = await prisma.chat.count();
+    const [currentMarketState, accountInformationAndPerformance, invocationCount] =
+      await Promise.all([
+        getCurrentMarketState(TRADING_SYMBOL),
+        getAccountInformationAndPerformance(initialCapital),
+        prisma.chat.count(),
+      ]);
 
     const userPrompt = generateUserPrompt({
       currentMarketState,
@@ -75,84 +76,33 @@ export async function run(initialCapital: number) {
       }),
     });
 
-    if (object.opeartion === Opeartion.Buy) {
-      await prisma.chat.create({
-        data: {
-          reasoning: reasoning || "<no reasoning>",
-          chat: object.chat || "<no chat>",
-          userPrompt,
-          tradings: {
-            createMany: {
-              data: {
-                symbol: Symbol.BTC,
-                opeartion: object.opeartion,
-                pricing: object.buy?.pricing,
-                amount: object.buy?.amount,
-                leverage: object.buy?.leverage,
-              },
-            },
-          },
-        },
-      });
+    const symbol = getPrismaSymbol(TRADING_SYMBOL);
 
-      const buyResult = await buy({
-        symbol: "BTC/USDT",
+    // Record decision to database first (ensures audit trail even if execution fails)
+    await recordDecision({
+      decision: object,
+      reasoning: reasoning || "",
+      userPrompt,
+      symbol,
+    });
+
+    // Execute the trade
+    if (object.opeartion === Opeartion.Buy) {
+      const result = await buy({
+        symbol: TRADING_SYMBOL,
         amount: object.buy?.amount ?? 0,
         leverage: object.buy?.leverage ?? 1,
         pricing: object.buy?.pricing,
       });
-      console.log("Buy result:", buyResult);
+      console.log("Buy result:", result);
     }
 
     if (object.opeartion === Opeartion.Sell) {
-      await prisma.chat.create({
-        data: {
-          reasoning: reasoning || "<no reasoning>",
-          chat: object.chat || "<no chat>",
-          userPrompt,
-          tradings: {
-            createMany: {
-              data: {
-                symbol: Symbol.BTC,
-                opeartion: object.opeartion,
-                percentage: object.sell?.percentage,
-              },
-            },
-          },
-        },
-      });
-
-      const sellResult = await sell({
-        symbol: "BTC/USDT",
+      const result = await sell({
+        symbol: TRADING_SYMBOL,
         percentage: object.sell?.percentage ?? 100,
       });
-      console.log("Sell result:", sellResult);
-    }
-
-    if (object.opeartion === Opeartion.Hold) {
-      const shouldAdjustProfit =
-        object.adjustProfit?.stopLoss || object.adjustProfit?.takeProfit;
-      await prisma.chat.create({
-        data: {
-          reasoning: reasoning || "<no reasoning>",
-          chat: object.chat || "<no chat>",
-          userPrompt,
-          tradings: {
-            createMany: {
-              data: {
-                symbol: Symbol.BTC,
-                opeartion: object.opeartion,
-                stopLoss: shouldAdjustProfit
-                  ? object.adjustProfit?.stopLoss
-                  : undefined,
-                takeProfit: shouldAdjustProfit
-                  ? object.adjustProfit?.takeProfit
-                  : undefined,
-              },
-            },
-          },
-        },
-      });
+      console.log("Sell result:", result);
     }
   } catch (error) {
     console.error("AI run loop failed:", error);

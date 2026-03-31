@@ -19,9 +19,11 @@ if (!secret) {
 }
 
 const header = { alg: "HS256", typ: "JWT" };
+const now = Math.floor(Date.now() / 1000);
 const payload = {
   sub: "cron-token",
-  iat: Math.floor(Date.now() / 1000),
+  iat: now,
+  exp: now + 3600, // 1 hour TTL
 };
 
 const headerB64 = base64url(JSON.stringify(header));

@@ -1,5 +1,6 @@
 import { Position } from "ccxt";
 import { binance } from "./binance";
+import { TRADING_SYMBOL } from "../config/trading";
 
 export interface AccountInformationAndPerformance {
   currentPositionsValue: number;
@@ -14,7 +15,7 @@ export interface AccountInformationAndPerformance {
 export async function getAccountInformationAndPerformance(
   initialCapital: number
 ): Promise<AccountInformationAndPerformance> {
-  const positions = await binance.fetchPositions(["BTC/USDT"]);
+  const positions = await binance.fetchPositions([TRADING_SYMBOL]);
   const currentPositionsValue = positions.reduce((acc, position) => {
     return acc + (position.initialMargin || 0) + (position.unrealizedPnl || 0);
   }, 0);

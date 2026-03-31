@@ -23,5 +23,6 @@ export const GET = async (request: NextRequest) => {
 
   return NextResponse.json({
     data: chat,
+    success: true,
   });
 };

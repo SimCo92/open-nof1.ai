@@ -2,31 +2,10 @@ import { prisma } from "@/lib/prisma";
 import { ModelType } from "@prisma/client";
 import { NextResponse } from "next/server";
 import { MetricData } from "@/lib/types/metrics";
+import { uniformSample } from "@/lib/utils/sampling";
 
 // Maximum number of data points to return
 const MAX_DATA_POINTS = 50;
-
-/**
- * Evenly sample a fixed number of items from an array.
- * @param data - Source dataset
- * @param sampleSize - Number of elements to sample
- * @returns Evenly spaced sampled data
- */
-function uniformSample<T>(data: T[], sampleSize: number): T[] {
-  if (data.length <= sampleSize) {
-    return data;
-  }
-
-  const result: T[] = [];
-  const step = (data.length - 1) / (sampleSize - 1);
-
-  for (let i = 0; i < sampleSize; i++) {
-    const index = Math.round(i * step);
-    result.push(data[index]);
-  }
-
-  return result;
-}
 
 export const GET = async () => {
   try {

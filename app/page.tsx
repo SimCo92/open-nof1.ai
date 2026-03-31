@@ -1,95 +1,15 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
 import { MetricsChart } from "@/components/metrics-chart";
 import { CryptoCard } from "@/components/crypto-card";
 import { ModelsView } from "@/components/models-view";
 import { Card } from "@/components/ui/card";
-import { MarketState } from "@/lib/trading/current-market-state";
-import { MetricData } from "@/lib/types/metrics";
-
-interface CryptoPricing {
-  btc: MarketState;
-  eth: MarketState;
-  sol: MarketState;
-  doge: MarketState;
-  bnb: MarketState;
-}
-
-interface MetricsResponse {
-  data: {
-    metrics: MetricData[];
-    totalCount: number;
-    model: string;
-    name: string;
-    createdAt: string;
-    updatedAt: string;
-  };
-  success: boolean;
-}
-
-interface PricingResponse {
-  data: {
-    pricing: CryptoPricing;
-  };
-  success: boolean;
-}
+import { useMetrics } from "@/lib/hooks/use-metrics";
+import { usePricing } from "@/lib/hooks/use-pricing";
 
 export default function Home() {
-  const [metricsData, setMetricsData] = useState<MetricData[]>([]);
-  const [totalCount, setTotalCount] = useState<number>(0);
-  const [pricing, setPricing] = useState<CryptoPricing | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState<string>("");
-
-  // Fetch metrics data
-  const fetchMetrics = useCallback(async () => {
-    try {
-      const response = await fetch("/api/metrics");
-      if (!response.ok) return;
-
-      const data: MetricsResponse = await response.json();
-      if (data.success && data.data) {
-        setMetricsData(data.data.metrics || []);
-        setTotalCount(data.data.totalCount || 0);
-        setLastUpdate(new Date().toLocaleTimeString());
-        setLoading(false);
-      }
-    } catch (err) {
-      console.error("Error fetching metrics:", err);
-      setLoading(false);
-    }
-  }, []);
-
-  // Fetch pricing data
-  const fetchPricing = useCallback(async () => {
-    try {
-      const response = await fetch("/api/pricing");
-      if (!response.ok) return;
-
-      const data: PricingResponse = await response.json();
-      if (data.success && data.data.pricing) {
-        setPricing(data.data.pricing);
-      }
-    } catch (err) {
-      console.error("Error fetching pricing:", err);
-    }
-  }, []);
-
-  useEffect(() => {
-    // Initial load
-    fetchMetrics();
-    fetchPricing();
-
-    const metricsInterval = setInterval(fetchMetrics, 10000);
-
-    const pricingInterval = setInterval(fetchPricing, 10000);
-
-    return () => {
-      clearInterval(metricsInterval);
-      clearInterval(pricingInterval);
-    };
-  }, [fetchMetrics, fetchPricing]);
+  const { metricsData, totalCount, loading, lastUpdate } = useMetrics();
+  const { pricing } = usePricing();
 
   return (
     <div className="min-h-screen bg-background p-4 md:p-8">
