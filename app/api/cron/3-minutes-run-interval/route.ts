@@ -17,7 +17,12 @@ export const GET = async (request: NextRequest) => {
     return new Response("Invalid token", { status: 401 });
   }
 
-  await run(Number(process.env.START_MONEY));
-
-  return new Response("Process executed successfully");
+  try {
+    await run(Number(process.env.START_MONEY));
+    return new Response("Process executed successfully");
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("3-minute run interval failed:", message);
+    return new Response(`Process failed: ${message}`, { status: 500 });
+  }
 };

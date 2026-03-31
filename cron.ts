@@ -21,7 +21,7 @@ const runMetricsInterval = async () => {
 };
 
 // every 20 seconds
-cron.schedule("*/10 * * * * *", async () => {
+cron.schedule("*/20 * * * * *", async () => {
   await runMetricsInterval();
 });
 

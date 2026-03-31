@@ -44,50 +44,56 @@ export const GET = async (request: NextRequest) => {
     return new Response("Invalid token", { status: 401 });
   }
 
-  const accountInformationAndPerformance =
-    await getAccountInformationAndPerformance(Number(process.env.START_MONEY));
+  try {
+    const accountInformationAndPerformance =
+      await getAccountInformationAndPerformance(Number(process.env.START_MONEY));
 
-  let existMetrics = await prisma.metrics.findFirst({
-    where: {
-      model: ModelType.Deepseek,
-    },
-  });
-
-  if (!existMetrics) {
-    existMetrics = await prisma.metrics.create({
-      data: {
-        name: "20-seconds-metrics",
-        metrics: [],
+    let existMetrics = await prisma.metrics.findFirst({
+      where: {
         model: ModelType.Deepseek,
       },
     });
+
+    if (!existMetrics) {
+      existMetrics = await prisma.metrics.create({
+        data: {
+          name: "20-seconds-metrics",
+          metrics: [],
+          model: ModelType.Deepseek,
+        },
+      });
+    }
+
+    // add new metrics
+    const newMetrics = [
+      ...((existMetrics?.metrics || []) as JsonValue[]),
+      {
+        accountInformationAndPerformance,
+        createdAt: new Date().toISOString(),
+      },
+    ] as JsonValue[];
+
+    // if the metrics count exceeds the maximum limit, uniformly sample the metrics
+    let finalMetrics = newMetrics;
+    if (newMetrics.length > MAX_METRICS_COUNT) {
+      finalMetrics = uniformSampleWithBoundaries(newMetrics, MAX_METRICS_COUNT);
+    }
+
+    await prisma.metrics.update({
+      where: {
+        id: existMetrics?.id,
+      },
+      data: {
+        metrics: finalMetrics as InputJsonValue[],
+      },
+    });
+
+    return new Response(
+      `Process executed successfully. Metrics count: ${finalMetrics.length}`
+    );
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("20-second metrics interval failed:", message);
+    return new Response(`Process failed: ${message}`, { status: 500 });
   }
-
-  // add new metrics
-  const newMetrics = [
-    ...((existMetrics?.metrics || []) as JsonValue[]),
-    {
-      accountInformationAndPerformance,
-      createdAt: new Date().toISOString(),
-    },
-  ] as JsonValue[];
-
-  // if the metrics count exceeds the maximum limit, uniformly sample the metrics
-  let finalMetrics = newMetrics;
-  if (newMetrics.length > MAX_METRICS_COUNT) {
-    finalMetrics = uniformSampleWithBoundaries(newMetrics, MAX_METRICS_COUNT);
-  }
-
-  await prisma.metrics.update({
-    where: {
-      id: existMetrics?.id,
-    },
-    data: {
-      metrics: finalMetrics as InputJsonValue[],
-    },
-  });
-
-  return new Response(
-    `Process executed successfully. Metrics count: ${finalMetrics.length}`
-  );
 };
